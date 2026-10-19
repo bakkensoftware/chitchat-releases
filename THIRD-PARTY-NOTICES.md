@@ -52,6 +52,11 @@ Embedded font copyright metadata is also reproduced in
 The family license texts are reproduced from the corresponding directories
 of the [Google Fonts collection](https://github.com/google/fonts/tree/main/ofl).
 
+Audiowide and Share Tech Mono use unmodified upstream TTFs to retain their
+Reserved Font Names. Source: Google Fonts commit
+[`47d54ca1ebb14fd864695f1d39dc734f39017c33`](https://github.com/google/fonts/tree/47d54ca1ebb14fd864695f1d39dc734f39017c33/ofl),
+`audiowide/Audiowide-Regular.ttf` and `sharetechmono/ShareTechMono-Regular.ttf`.
+
 ## Separately downloaded speech components
 
 The Windows installer does not bundle uv, Python, Phonon, PyTorch, speech
