@@ -8,7 +8,7 @@
     },
     "notes": [
         "Run 'chitchat setup' once to download Python, the local speech engine and model, then 'chitchat start'.",
-        "Scoop installation does not enable startup at login. Settings, history and speech data are retained on uninstall.",
+        "ChitChat starts silently for this user at login. Settings, history and speech data are retained on uninstall.",
         "Use one ChitChat installation at a time: Scoop and the Windows installer share user settings and speech data."
     ],
     "depends": "main/uv",
@@ -27,6 +27,10 @@
             "chitchat.ico"
         ]
     ],
+    "post_install": [
+        "& \"$dir\\chitchat.exe\" install-startup",
+        "if ($LASTEXITCODE) { throw 'Could not enable ChitChat at user login.' }"
+    ],
     "pre_uninstall": [
         "$appRoot = (Split-Path $dir) + '\\'",
         "$owned = @(Get-Process chitchatd -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($appRoot, [StringComparison]::OrdinalIgnoreCase) })",
@@ -35,6 +39,12 @@
         "    if ($LASTEXITCODE) { throw 'Could not stop ChitChat before updating or uninstalling.' }",
         "    foreach ($process in $owned) { if (-not $process.WaitForExit(10000)) { throw 'ChitChat did not stop; application files were preserved.' } }",
         "}"
+    ],
+    "post_uninstall": [
+        "$runKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$startup = (Get-ItemProperty -LiteralPath $runKey -Name chitchat-sonnet -ErrorAction SilentlyContinue).'chitchat-sonnet'",
+        "$target = '\"' + (Join-Path (Split-Path $dir) 'current\\chitchatd.exe') + '\"'",
+        "if ($cmd -eq 'uninstall' -and $startup -eq $target) { Remove-ItemProperty -LiteralPath $runKey -Name chitchat-sonnet }"
     ],
     "checkver": "github",
     "autoupdate": {
