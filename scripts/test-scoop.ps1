@@ -62,6 +62,27 @@ Assert-Check ($LASTEXITCODE -eq 0 -and (Test-Path $fixture)) 'Non-sensitive spee
 $transcript = (& chitchat transcribe $fixture | Out-String)
 Assert-Check ($LASTEXITCODE -eq 0 -and $transcript -match 'quick brown fox') 'Installed local speech engine transcribes actual audio'
 
+$python = "$env:LOCALAPPDATA/chitchat-sonnet/phonon/venv/Scripts/python.exe"
+$httpsProbe = 'import urllib.request; urllib.request.urlopen("https://huggingface.co", timeout=8).close()'
+& $python -c $httpsProbe
+Assert-Check ($LASTEXITCODE -eq 0) 'Speech runtime can reach HTTPS before the offline check'
+$runtimePaths = @(& $python -c 'import sys; print(sys.executable); print(sys._base_executable)')
+$offlinePrograms = @($runtimePaths + @("$app/chitchat.exe", "$env:LOCALAPPDATA/chitchat-sonnet/phonon/venv/Scripts/fermion.exe", (Get-Command uv).Source)) |
+    ForEach-Object { [IO.Path]::GetFullPath($_) } | Select-Object -Unique
+$offlineRules = @()
+try {
+    Assert-Check (@(Get-NetFirewallProfile | Where-Object { -not $_.Enabled }).Count -eq 0) 'Windows Firewall is active for the offline check'
+    foreach ($program in $offlinePrograms) {
+        $offlineRules += New-NetFirewallRule -DisplayName ('ChitChat offline test ' + [guid]::NewGuid().ToString('N')) -Direction Outbound -Action Block -Program $program -RemoteAddress '0.0.0.0-126.255.255.255', '128.0.0.0-255.255.255.255', '::2-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'
+    }
+    & $python -c $httpsProbe 2>&1 | Out-Host
+    Assert-Check ($LASTEXITCODE -ne 0) 'Speech runtime HTTPS fails while its internet access is blocked'
+    $offlineTranscript = (& chitchat transcribe $fixture | Out-String)
+    Assert-Check ($LASTEXITCODE -eq 0 -and $offlineTranscript -match 'quick brown fox') 'Default local model transcribes with internet blocked and loopback allowed'
+} finally {
+    $offlineRules | Remove-NetFirewallRule
+}
+
 $settings = "$env:APPDATA/chitchat-sonnet"
 $data = "$env:LOCALAPPDATA/chitchat-sonnet"
 New-Item -ItemType Directory -Path "$data/history", $settings -Force | Out-Null
