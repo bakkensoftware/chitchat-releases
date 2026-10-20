@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: scoop-${{ github.ref }}
+  group: scoop
   cancel-in-progress: false
 
 jobs:
@@ -48,7 +48,7 @@ jobs:
       - name: Verify extraction and installed lifecycle
         run: ./scripts/test-scoop.ps1 -Lifecycle
       - name: Publish verified manifest update
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'release' || github.event_name == 'workflow_dispatch')
+        if: github.event_name == 'release' || (github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch')
         run: |
           git diff --exit-code -- bucket/chitchat.json
           if ($LASTEXITCODE -eq 0) { exit 0 }
