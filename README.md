@@ -15,12 +15,13 @@ bundled components retain their [own licenses](THIRD-PARTY-NOTICES.md).
 
 ## Downloads
 
-Public installer publication is being prepared. **No tested public installer
-or winget catalog entry is available from this repository yet.**
+[Download ChitChat 0.1.92 for Windows x64](https://github.com/bakkensoftware/chitchat-releases/releases/download/v0.1.92/chitchat-setup-0.1.92.exe).
+Verify it against [SHA256SUMS.txt](https://github.com/bakkensoftware/chitchat-releases/releases/download/v0.1.92/SHA256SUMS.txt)
+before running the installer. See [release details](https://github.com/bakkensoftware/chitchat-releases/releases/tag/v0.1.92)
+or browse [all releases](https://github.com/bakkensoftware/chitchat-releases/releases).
 
-When published, installers will appear on the [Releases page](https://github.com/bakkensoftware/chitchat-releases/releases).
-The intended winget identifier is `BakkenSoftware.Chitchat`; this is not a
-claim that it is already in the catalog.
+The winget catalog entry is **pending**. The intended identifier is
+`BakkenSoftware.Chitchat`; it is not yet advertised as available in the catalog.
 
 ## Installation and first use
 
@@ -29,7 +30,7 @@ The Windows x64 installer installs for the current user under
 Start menu shortcuts and configures startup at login. It does not add the
 application directory to PATH or bundle the local speech engine.
 
-After installing a published release, install uv for local engine setup:
+Run the downloaded installer, then install uv for local engine setup:
 
 ```powershell
 winget install --exact --id astral-sh.uv --source winget
