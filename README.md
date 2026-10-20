@@ -1,29 +1,28 @@
 # ChitChat for Windows
 
-ChitChat is Bakken Software's desktop dictation app. Press **Ctrl+Space** to
-start recording and see your words in an overlay. Press it again to type the
-result into the focused text box. **Esc** cancels a recording.
+**Speak instead of typing, even when you're offline.** ChitChat turns your
+voice into text in the Windows app you're using. It runs
+[Fermion Research's Phonon-2 speech model](https://huggingface.co/FermionResearch/Phonon-2)
+on your own computer.
 
-The default speech provider, Phonon-2, runs locally. Optional OpenAI
-transcription sends audio to the configured hosted service and requires your
-own API key. Read the [privacy information](PRIVACY.md) before dictating:
-ChitChat saves recordings and transcripts on your computer.
+Press **Ctrl+Space**, speak, then press **Ctrl+Space** again to type your words
+into the selected text box. An overlay shows the words as you speak.
+Press **Esc** to cancel.
 
-This repository hosts public Windows installers and product documentation.
-The application source is private. ChitChat is [proprietary](LICENSE.md);
-bundled components retain their [own licenses](THIRD-PARTY-NOTICES.md).
+You need an internet connection for the first setup and model downloads.
+After that, everyday dictation with the default local model works offline,
+without a paid transcription account. Your audio stays on your computer.
+ChitChat saves recordings and transcripts locally so you can find them later;
+see [what is saved and how to delete it](PRIVACY.md#stored-data-and-deletion).
 
-## Downloads
+## Install
 
-[Download ChitChat 0.1.92 for Windows x64](https://github.com/bakkensoftware/chitchat-releases/releases/download/v0.1.92/chitchat-setup-0.1.92.exe).
-Verify it against [SHA256SUMS.txt](https://github.com/bakkensoftware/chitchat-releases/releases/download/v0.1.92/SHA256SUMS.txt)
-before running the installer. See [release details](https://github.com/bakkensoftware/chitchat-releases/releases/tag/v0.1.92)
-or browse [all releases](https://github.com/bakkensoftware/chitchat-releases/releases).
+ChitChat is available for **64-bit Windows**. Choose Scoop if you already use
+it, or download the Windows installer.
 
-The winget catalog entry is **pending**. The intended identifier is
-`BakkenSoftware.Chitchat`; it is not yet advertised as available in the catalog.
+### With Scoop
 
-## Install with Scoop
+Open PowerShell and run:
 
 ```powershell
 scoop bucket add bakken https://github.com/bakkensoftware/chitchat-releases
@@ -32,13 +31,68 @@ chitchat setup
 chitchat start
 ```
 
-The bucket is maintained by Bakken Software. Scoop installs uv automatically;
-the one-time setup command downloads Python, the local speech engine and model.
-Scoop extracts the same release used by the Windows installer, adds the
-`chitchat` command to PATH and creates a **ChitChat** Start menu shortcut.
-It does not enable startup at login.
+The first two commands install ChitChat from Bakken Software's package
+collection. `setup` downloads the local speech engine and Phonon-2 model;
+let it finish before starting dictation. Scoop installs the setup tool
+**uv** automatically.
 
-To update:
+ChitChat gets a Start menu shortcut and starts automatically when you sign
+in to your Windows account. Run `chitchat start` to use it now without
+signing out.
+
+### With the Windows installer
+
+1. [Download the latest ChitChat release](https://github.com/bakkensoftware/chitchat-releases/releases/latest)
+   and run the `chitchat-setup-<version>.exe` installer from its **Assets** list.
+2. Open PowerShell and install **uv**, the tool ChitChat uses to set up its
+   local speech engine:
+
+   ```powershell
+   winget install --exact --id astral-sh.uv --source winget
+   ```
+
+3. Open a **new** PowerShell window, then download the speech engine and
+   model and start ChitChat:
+
+   ```powershell
+   $chitchat = "$env:LOCALAPPDATA\Programs\chitchat-sonnet\chitchat.exe"
+   & $chitchat setup
+   & $chitchat start
+   ```
+
+The installer creates desktop and Start menu shortcuts and starts ChitChat
+automatically when you sign in to your Windows account. The one-time
+`setup` step still needs to finish before you can dictate.
+
+If you selected a different installation folder, use its `chitchat.exe` path
+in the command above. The installer does not add `chitchat` to PowerShell's
+command search path.
+
+The release page also includes `SHA256SUMS.txt` to verify the download.
+[Browse all release notes and downloads](https://github.com/bakkensoftware/chitchat-releases/releases).
+
+## Use ChitChat
+
+1. Click the text box where you want to write.
+2. Press **Ctrl+Space** and speak. Watch your words appear in the overlay.
+3. Press **Ctrl+Space** again. ChitChat types the result into that text box.
+
+Press **Esc** during a recording to cancel it. Right-click the ChitChat icon
+in the Windows notification area to change settings, themes or layouts,
+or open **History & clipboard** to find earlier dictations. Copying every
+dictation to the clipboard is optional and is off by default.
+
+ChitChat cannot type into an app running as administrator unless ChitChat
+is also running as administrator.
+
+## Update or remove
+
+Use one installation method at a time. Scoop and the Windows installer
+share the same settings, recordings and speech model.
+
+### Scoop
+
+Stop ChitChat before updating:
 
 ```powershell
 chitchat stop
@@ -46,68 +100,38 @@ scoop update chitchat
 chitchat start
 ```
 
-To remove:
+To uninstall:
 
 ```powershell
 scoop uninstall chitchat
 ```
 
-Stop ChitChat before updating; Scoop defers updates while the app is running.
-Removal stops a Scoop-launched instance automatically. Both operations retain
-settings, recordings, transcripts and the downloaded speech engine. Use one
-ChitChat installation at a time: Scoop and the Windows installer share user
-settings and speech data.
+### Windows installer
 
-## Installation with the Windows installer
+Download and run the newer installer to update. To uninstall, open
+**Windows Settings > Apps** and remove ChitChat.
 
-The Windows x64 installer installs for the current user under
-`%LOCALAPPDATA%\Programs\chitchat-sonnet` by default. It creates desktop and
-Start menu shortcuts and configures startup at login. It does not add the
-application directory to PATH or bundle the local speech engine.
+Both installation methods keep your settings, recordings, transcripts and
+downloaded speech engine when updating or uninstalling. To remove that
+data too, follow the [data deletion instructions](PRIVACY.md#stored-data-and-deletion).
 
-Run the downloaded installer, then install uv for local engine setup:
+## Help and other speech options
 
-```powershell
-winget install --exact --id astral-sh.uv --source winget
-```
+If setup or dictation fails, run `chitchat doctor` in PowerShell to check
+the installation. For the Windows installer, use `& $chitchat doctor` in
+the PowerShell window where you set `$chitchat` above. `chitchat help`
+lists the available commands.
 
-Open a new PowerShell window so uv is available on PATH, then run:
+Phonon-2 is the default. An optional **OpenAI** provider is also available
+in configuration, using your own API key. That option needs internet access
+and sends audio to the configured service. Read the
+[privacy information](PRIVACY.md) before changing providers.
 
-```powershell
-$chitchat = "$env:LOCALAPPDATA\Programs\chitchat-sonnet\chitchat.exe"
-& $chitchat setup
-& $chitchat start
-```
+[Report a problem or request a feature](https://github.com/bakkensoftware/chitchat-releases/issues).
+Reports are public, so leave out private recordings, transcripts, API keys,
+configuration files and unreviewed logs.
 
-If you chose a different install directory, use its `chitchat.exe` path.
-Setup needs an internet connection to download Python, speech dependencies
-and the model. After successful setup, the default local transcription
-does not need a hosted transcription account. The installer alone does not
-complete speech setup. Silent installation uses `/S` and does not launch
-the app from the installer finish page.
-
-Select a text box, press Ctrl+Space, speak, and press Ctrl+Space again.
-The tray menu opens configuration, switches themes and layouts, and offers
-**History & clipboard**. Automatic copying of each dictation to the clipboard
-is off by default. ChitChat cannot type into an elevated application unless
-it is also elevated.
-
-For diagnostics:
-
-```powershell
-& $chitchat doctor
-& $chitchat help
-```
-
-## Updates and removal
-
-Installing a newer release replaces the installed application files.
-Uninstall through Windows Settings > Apps. Updating and uninstalling retain
-settings, logs, recordings, transcripts and the downloaded speech engine.
-See [stored data and deletion](PRIVACY.md#stored-data-and-deletion).
-
-## Help
-
-Report product problems through [Issues](https://github.com/bakkensoftware/chitchat-releases/issues).
-Issues are public: do not attach private recordings, transcripts, API keys,
-configuration files or unreviewed logs.
+ChitChat is published by Bakken Software. This repository contains its
+Windows downloads and documentation; the application source is private.
+See the [application license](LICENSE.md) and
+[third-party notices](THIRD-PARTY-NOTICES.md).
