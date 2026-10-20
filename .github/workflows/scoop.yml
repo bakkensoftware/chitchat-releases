@@ -1,0 +1,60 @@
+name: Scoop package
+
+on:
+  pull_request:
+    paths: ['bucket/**', 'scripts/test-scoop.ps1', '.github/workflows/scoop.yml']
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scoop
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && 'main' || github.ref }}
+      - name: Install Scoop on disposable runner
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:SCOOP = Join-Path $env:RUNNER_TEMP 'scoop'
+          Invoke-WebRequest https://get.scoop.sh -OutFile "$env:RUNNER_TEMP/install-scoop.ps1"
+          & "$env:RUNNER_TEMP/install-scoop.ps1" -ScoopDir $env:SCOOP -RunAsAdmin
+          if ($LASTEXITCODE) { throw 'Scoop bootstrap failed.' }
+          "SCOOP=$env:SCOOP" >> $env:GITHUB_ENV
+          "$env:SCOOP/shims" >> $env:GITHUB_PATH
+      - name: Refresh manifest after a published release
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          & "$env:SCOOP/apps/scoop/current/bin/checkver.ps1" -App chitchat -Dir bucket -Update -ThrowError
+      - name: Verify extraction and installed lifecycle
+        run: ./scripts/test-scoop.ps1 -Lifecycle
+      - name: Publish verified manifest update
+        if: github.event_name == 'release' || (github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch')
+        run: |
+          git diff --exit-code -- bucket/chitchat.json
+          if ($LASTEXITCODE -eq 0) { exit 0 }
+          if ($LASTEXITCODE -ne 1) { throw 'Could not inspect manifest changes.' }
+          $version = (Get-Content bucket/chitchat.json -Raw | ConvertFrom-Json).version
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bucket/chitchat.json
+          git commit -m "Update ChitChat Scoop package to $version"
+          if ($LASTEXITCODE) { throw 'Could not commit verified manifest.' }
+          git push origin HEAD:main
+          if ($LASTEXITCODE) { throw 'Could not publish verified manifest.' }

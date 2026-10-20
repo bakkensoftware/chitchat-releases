@@ -23,7 +23,42 @@ or browse [all releases](https://github.com/bakkensoftware/chitchat-releases/rel
 The winget catalog entry is **pending**. The intended identifier is
 `BakkenSoftware.Chitchat`; it is not yet advertised as available in the catalog.
 
-## Installation and first use
+## Install with Scoop
+
+```powershell
+scoop bucket add bakken https://github.com/bakkensoftware/chitchat-releases
+scoop install bakken/chitchat
+chitchat setup
+chitchat start
+```
+
+The bucket is maintained by Bakken Software. Scoop installs uv automatically;
+the one-time setup command downloads Python, the local speech engine and model.
+Scoop extracts the same release used by the Windows installer, adds the
+`chitchat` command to PATH and creates a **ChitChat** Start menu shortcut.
+It does not enable startup at login.
+
+To update:
+
+```powershell
+chitchat stop
+scoop update chitchat
+chitchat start
+```
+
+To remove:
+
+```powershell
+scoop uninstall chitchat
+```
+
+Stop ChitChat before updating; Scoop defers updates while the app is running.
+Removal stops a Scoop-launched instance automatically. Both operations retain
+settings, recordings, transcripts and the downloaded speech engine. Use one
+ChitChat installation at a time: Scoop and the Windows installer share user
+settings and speech data.
+
+## Installation with the Windows installer
 
 The Windows x64 installer installs for the current user under
 `%LOCALAPPDATA%\Programs\chitchat-sonnet` by default. It creates desktop and

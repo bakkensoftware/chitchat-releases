@@ -1,0 +1,47 @@
+{
+    "version": "0.1.92",
+    "description": "Live desktop dictation with a themed overlay and local speech recognition.",
+    "homepage": "https://github.com/bakkensoftware/chitchat-releases",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://github.com/bakkensoftware/chitchat-releases/blob/main/LICENSE.md"
+    },
+    "notes": [
+        "Run 'chitchat setup' once to download Python, the local speech engine and model, then 'chitchat start'.",
+        "Scoop installation does not enable startup at login. Settings, history and speech data are retained on uninstall.",
+        "Use one ChitChat installation at a time: Scoop and the Windows installer share user settings and speech data."
+    ],
+    "depends": "main/uv",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/bakkensoftware/chitchat-releases/releases/download/v0.1.92/chitchat-setup-0.1.92.exe#/dl.7z",
+            "hash": "574fc9b292af99aa35fd8461bb3ce75d63d29e29aace1e5248e7ab714d6b0c38"
+        }
+    },
+    "bin": "chitchat.exe",
+    "shortcuts": [
+        [
+            "chitchatd.exe",
+            "ChitChat",
+            "",
+            "chitchat.ico"
+        ]
+    ],
+    "pre_uninstall": [
+        "$appRoot = (Split-Path $dir) + '\\'",
+        "$owned = @(Get-Process chitchatd -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($appRoot, [StringComparison]::OrdinalIgnoreCase) })",
+        "if ($owned.Count) {",
+        "    & \"$dir\\chitchat.exe\" stop",
+        "    if ($LASTEXITCODE) { throw 'Could not stop ChitChat before updating or uninstalling.' }",
+        "    foreach ($process in $owned) { if (-not $process.WaitForExit(10000)) { throw 'ChitChat did not stop; application files were preserved.' } }",
+        "}"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/bakkensoftware/chitchat-releases/releases/download/v$version/chitchat-setup-$version.exe#/dl.7z"
+            }
+        }
+    }
+}
