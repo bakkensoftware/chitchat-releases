@@ -67,7 +67,7 @@ $httpsProbe = 'import urllib.request; urllib.request.urlopen("https://huggingfac
 & $python -c $httpsProbe
 Assert-Check ($LASTEXITCODE -eq 0) 'Speech runtime can reach HTTPS before the offline check'
 $runtimePaths = @(& $python -c 'import sys; print(sys.executable); print(sys._base_executable)')
-$offlinePrograms = @($runtimePaths + @("$app/chitchat.exe", "$env:LOCALAPPDATA/chitchat-sonnet/phonon/venv/Scripts/fermion.exe", (Get-Command uv).Source)) |
+$offlinePrograms = @($runtimePaths + @("$app/chitchat.exe", "$env:SCOOP/apps/chitchat/$($manifest.version)/chitchat.exe", "$env:LOCALAPPDATA/chitchat-sonnet/phonon/venv/Scripts/fermion.exe", (Get-Command uv).Source)) |
     ForEach-Object { [IO.Path]::GetFullPath($_) } | Select-Object -Unique
 $offlineRules = @()
 try {
