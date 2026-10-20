@@ -100,6 +100,17 @@ scoop update chitchat
 chitchat start
 ```
 
+If you installed ChitChat with Scoop before automatic startup was added,
+run this once to enable it for your Windows account, even if Scoop says
+you already have the latest version:
+
+```powershell
+scoop update
+chitchat stop
+scoop update chitchat --force
+chitchat start
+```
+
 To uninstall:
 
 ```powershell
