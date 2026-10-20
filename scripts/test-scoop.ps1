@@ -40,7 +40,8 @@ Assert-Check ($LASTEXITCODE -eq 0) 'Declared uv dependency is executable'
 $shortcut = Join-Path ([Environment]::GetFolderPath('StartMenu')) 'Programs/Scoop Apps/ChitChat.lnk'
 Assert-Check (Test-Path -LiteralPath $shortcut) 'Start menu shortcut exists'
 $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-Assert-Check (-not (Get-ItemProperty -LiteralPath $runKey -Name chitchat-sonnet -ErrorAction SilentlyContinue)) 'Scoop install does not replace another installation startup entry'
+$startup = (Get-ItemProperty -LiteralPath $runKey -Name chitchat-sonnet -ErrorAction SilentlyContinue).'chitchat-sonnet'
+Assert-Check ($startup -eq ('"' + "$app\chitchatd.exe" + '"')) 'Install registers the stable current daemon for this user at login'
 
 & chitchat setup
 Assert-Check ($LASTEXITCODE -eq 0) 'First-use engine and model setup succeeds'
