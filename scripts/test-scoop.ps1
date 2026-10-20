@@ -33,7 +33,7 @@ New-Item -ItemType Directory -Path "$env:SCOOP/buckets/bakken/bucket" -Force | O
 Copy-Item $manifestPath "$env:SCOOP/buckets/bakken/bucket/chitchat.json" -Force
 scoop install bakken/chitchat
 Assert-Check ($LASTEXITCODE -eq 0) 'Scoop installs ChitChat and dependencies'
-$app = "$env:SCOOP/apps/chitchat/current"
+$app = "$env:SCOOP\apps\chitchat\current"
 Assert-Check ((& chitchat version) -match [regex]::Escape($manifest.version)) 'CLI shim resolves installed release'
 & uv --version
 Assert-Check ($LASTEXITCODE -eq 0) 'Declared uv dependency is executable'
@@ -42,6 +42,9 @@ Assert-Check (Test-Path -LiteralPath $shortcut) 'Start menu shortcut exists'
 $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $startup = (Get-ItemProperty -LiteralPath $runKey -Name chitchat-sonnet -ErrorAction SilentlyContinue).'chitchat-sonnet'
 Assert-Check ($startup -eq ('"' + "$app\chitchatd.exe" + '"')) 'Install registers the stable current daemon for this user at login'
+$startupBytes = [IO.File]::ReadAllBytes("$app/chitchatd.exe")
+$peOffset = [BitConverter]::ToInt32($startupBytes, 0x3c)
+Assert-Check ([BitConverter]::ToUInt16($startupBytes, $peOffset + 92) -eq 2) 'Login target is a Windows GUI executable without a console subsystem'
 
 & chitchat setup
 Assert-Check ($LASTEXITCODE -eq 0) 'First-use engine and model setup succeeds'
@@ -74,16 +77,21 @@ Assert-Check ($LASTEXITCODE -eq 0) 'Scoop updates while another installation is 
 Assert-Check (Get-Process -Id $outsideDaemon.Id -ErrorAction SilentlyContinue) 'Package hook leaves a separately installed daemon running'
 & "$download/payload/chitchat.exe" stop
 Assert-Check ($LASTEXITCODE -eq 0 -and $outsideDaemon.WaitForExit(10000)) 'Separate installation stops through its own CLI'
-& chitchat start
-Assert-Check ($LASTEXITCODE -eq 0) 'Extracted daemon starts successfully'
+Start-Process -FilePath $startup.Trim('"') | Out-Null
+Start-Sleep -Seconds 3
 Assert-Check (@(Get-Process chitchatd -ErrorAction SilentlyContinue).Count -eq 1) 'Scoop-launched daemon is running before update'
 $daemon = Get-Process chitchatd
+Assert-Check ($daemon.Path -like "$env:SCOOP\apps\chitchat\*\chitchatd.exe") 'Registered login command launches the installed daemon'
+Assert-Check ($daemon.MainWindowHandle -eq 0) 'Login daemon has no visible main window'
+$consoleChildren = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($daemon.Id)" | Where-Object { $_.Name -in 'cmd.exe', 'powershell.exe', 'pwsh.exe', 'conhost.exe', 'OpenConsole.exe' })
+Assert-Check ($consoleChildren.Count -eq 0) 'Login daemon does not spawn a console host or shell'
 scoop update chitchat --force
 Assert-Check (Get-Process -Id $daemon.Id -ErrorAction SilentlyContinue) 'Scoop safely defers an update while the app is running'
 & chitchat stop
 Assert-Check ($LASTEXITCODE -eq 0 -and $daemon.WaitForExit(10000)) 'Documented stop command releases the installed application'
 scoop update chitchat --force
 Assert-Check ($LASTEXITCODE -eq 0) 'Scoop replaces the stopped installation'
+Assert-Check ((Get-ItemProperty -LiteralPath $runKey -Name chitchat-sonnet).'chitchat-sonnet' -eq $startup) 'Forced reinstall retains the stable login command'
 Assert-Check (-not (Get-Process chitchatd -ErrorAction SilentlyContinue)) 'Update does not launch the daemon'
 Assert-Check ((Get-FileHash "$settings/config.json").Hash -eq $settingsHash) 'Update preserves settings'
 Assert-Check ((Get-Content "$data/history/scoop-retention.txt") -eq 'retained recording history') 'Update preserves recording history'
@@ -92,9 +100,19 @@ Assert-Check ((& chitchat version) -match [regex]::Escape($manifest.version)) 'C
 Assert-Check ($LASTEXITCODE -eq 0) 'Updated installation starts successfully'
 scoop uninstall chitchat
 Assert-Check ($LASTEXITCODE -eq 0) 'Scoop uninstalls a running installation'
+Assert-Check (-not (Get-ItemProperty -LiteralPath $runKey -Name chitchat-sonnet -ErrorAction SilentlyContinue)) 'Uninstall removes its own login entry'
 Assert-Check (-not (Test-Path -LiteralPath $app)) 'Uninstall removes application files'
 Assert-Check (-not (Test-Path -LiteralPath $shortcut)) 'Uninstall removes the Scoop shortcut'
 Assert-Check (-not (Get-Command chitchat -ErrorAction SilentlyContinue)) 'Uninstall removes the CLI shim'
 Assert-Check ((Get-FileHash "$settings/config.json").Hash -eq $settingsHash) 'Uninstall preserves settings'
 Assert-Check ((Get-Content "$data/history/scoop-retention.txt") -eq 'retained recording history') 'Uninstall preserves recording history'
 Assert-Check (Test-Path "$data/phonon/venv/Scripts/fermion.exe") 'Uninstall retains the downloaded speech engine'
+
+scoop install bakken/chitchat
+Assert-Check ($LASTEXITCODE -eq 0) 'Scoop installs again for startup ownership regression'
+$outsideStartup = '"' + "$download\payload\chitchatd.exe" + '"'
+Set-ItemProperty -LiteralPath $runKey -Name chitchat-sonnet -Value $outsideStartup
+scoop uninstall chitchat
+Assert-Check ($LASTEXITCODE -eq 0) 'Scoop uninstalls after another installation claims startup'
+Assert-Check ((Get-ItemProperty -LiteralPath $runKey -Name chitchat-sonnet).'chitchat-sonnet' -eq $outsideStartup) 'Uninstall preserves another installation login command'
+Remove-ItemProperty -LiteralPath $runKey -Name chitchat-sonnet
