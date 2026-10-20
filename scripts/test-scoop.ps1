@@ -65,6 +65,14 @@ New-Item -ItemType Directory -Path "$data/history", $settings -Force | Out-Null
 @{ provider = 'mock'; hotkey = 'ctrl+alt+f10'; theme_key = ''; layout_key = '' } |
     ConvertTo-Json | Set-Content "$settings/config.json"
 $settingsHash = (Get-FileHash "$settings/config.json").Hash
+& "$download/payload/chitchat.exe" start
+Assert-Check ($LASTEXITCODE -eq 0) 'Separate extracted installation starts'
+$outsideDaemon = Get-Process chitchatd
+scoop update chitchat --force
+Assert-Check ($LASTEXITCODE -eq 0) 'Scoop updates while another installation is running'
+Assert-Check (Get-Process -Id $outsideDaemon.Id -ErrorAction SilentlyContinue) 'Package hook leaves a separately installed daemon running'
+& "$download/payload/chitchat.exe" stop
+Assert-Check ($LASTEXITCODE -eq 0 -and $outsideDaemon.WaitForExit(10000)) 'Separate installation stops through its own CLI'
 & chitchat start
 Assert-Check ($LASTEXITCODE -eq 0) 'Extracted daemon starts successfully'
 Assert-Check (@(Get-Process chitchatd -ErrorAction SilentlyContinue).Count -eq 1) 'Scoop-launched daemon is running before update'

@@ -1,9 +1,6 @@
 name: Scoop package
 
 on:
-  push:
-    branches: [main]
-    paths: ['bucket/**', 'scripts/test-scoop.ps1', '.github/workflows/scoop.yml']
   pull_request:
     paths: ['bucket/**', 'scripts/test-scoop.ps1', '.github/workflows/scoop.yml']
   release:

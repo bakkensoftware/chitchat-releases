@@ -38,12 +38,17 @@ Scoop extracts the same release used by the Windows installer, adds the
 `chitchat` command to PATH and creates a **ChitChat** Start menu shortcut.
 It does not enable startup at login.
 
-To update or uninstall:
+To update:
 
 ```powershell
 chitchat stop
 scoop update chitchat
 chitchat start
+```
+
+To remove:
+
+```powershell
 scoop uninstall chitchat
 ```
 
