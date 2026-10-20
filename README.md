@@ -41,11 +41,14 @@ It does not enable startup at login.
 To update or uninstall:
 
 ```powershell
+chitchat stop
 scoop update chitchat
+chitchat start
 scoop uninstall chitchat
 ```
 
-Updates and removal stop a Scoop-launched ChitChat instance first and retain
+Stop ChitChat before updating; Scoop defers updates while the app is running.
+Removal stops a Scoop-launched instance automatically. Both operations retain
 settings, recordings, transcripts and the downloaded speech engine. Use one
 ChitChat installation at a time: Scoop and the Windows installer share user
 settings and speech data.

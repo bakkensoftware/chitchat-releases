@@ -68,9 +68,14 @@ $settingsHash = (Get-FileHash "$settings/config.json").Hash
 & chitchat start
 Assert-Check ($LASTEXITCODE -eq 0) 'Extracted daemon starts successfully'
 Assert-Check (@(Get-Process chitchatd -ErrorAction SilentlyContinue).Count -eq 1) 'Scoop-launched daemon is running before update'
+$daemon = Get-Process chitchatd
 scoop update chitchat --force
-Assert-Check ($LASTEXITCODE -eq 0) 'Scoop update safely replaces a running installation'
-Assert-Check (-not (Get-Process chitchatd -ErrorAction SilentlyContinue)) 'Update stopped the running Scoop daemon'
+Assert-Check (Get-Process -Id $daemon.Id -ErrorAction SilentlyContinue) 'Scoop safely defers an update while the app is running'
+& chitchat stop
+Assert-Check ($LASTEXITCODE -eq 0 -and $daemon.WaitForExit(10000)) 'Documented stop command releases the installed application'
+scoop update chitchat --force
+Assert-Check ($LASTEXITCODE -eq 0) 'Scoop replaces the stopped installation'
+Assert-Check (-not (Get-Process chitchatd -ErrorAction SilentlyContinue)) 'Update does not launch the daemon'
 Assert-Check ((Get-FileHash "$settings/config.json").Hash -eq $settingsHash) 'Update preserves settings'
 Assert-Check ((Get-Content "$data/history/scoop-retention.txt") -eq 'retained recording history') 'Update preserves recording history'
 Assert-Check ((& chitchat version) -match [regex]::Escape($manifest.version)) 'CLI shim still works after update'
